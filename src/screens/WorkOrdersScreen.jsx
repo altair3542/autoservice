@@ -1,14 +1,27 @@
-import { Text, View, StyleSheet } from 'react-native'
+// Stack interno exclusivo del Tab "Órdenes".
+// Permite navegar Lista -> Formulario sin salir del tab.
+
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import WorkOrdersListScreen from './WorkOrdersListScreen.jsx';
+import WorkOrderFormScreen from './WorkOrderFormScreen.jsx';
+
+const Stack = createNativeStackNavigator();
 
 export default function WorkOrdersScreen() {
-  return
-    <View style={s.box}>
-      <Text style={s.box}>
-        Ordenes de Servicio
-      </Text>
-    </View>
+  return (
+    <Stack.Navigator>
+      {/* Pantalla por defecto: lista de órdenes */}
+      <Stack.Screen
+        name="WorkOrdersList"
+        component={WorkOrdersListScreen}
+        options={{ title: 'Órdenes de Servicio' }}
+      />
+      {/* Formulario de crear/editar (se abre por navegación) */}
+      <Stack.Screen
+        name="WorkOrderForm"
+        component={WorkOrderFormScreen}
+        options={{ title: 'Orden' }}
+      />
+    </Stack.Navigator>
+  );
 }
-
-const s = StyleSheet.create({ box:{ flex:1, padding:16 }, h1:{ fontSize:22, fontWeight:'800' } });
-
-
