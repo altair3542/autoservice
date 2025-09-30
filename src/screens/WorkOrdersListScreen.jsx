@@ -55,6 +55,123 @@ export default function WorkOrdersListScreen() {
       setPage(pageToLoad)
     } catch (e) {
       console.warn(e)
+    } finally {
+      setLoading(false)
     }
   }
+
+  // Efecto: recargar al cambiar búsqueda/filtro.
+  useEffect(() => {
+    loadOrders(1, false)
+  }, [query, status]);
+
+  // infinite scroll (cargar siguiente pagina)
+  const loadMore = () => {
+    if (!hasMore || loading) return;
+    loadOrders(page + 1, true)
+  }
+
+  // Pull to refresh (recarga pagina 1)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await loadOrders(1, false)
+    setRefreshing(false)
+  }
+
+  // Render de cada ítem (tocar = editar)
+  const renderItem = ({ item }) => (
+    <Pressable
+      style={styles.item}
+      onPress={() => navigation.navigate('WorkOrderForm', { id: item.id })}
+    >
+      <Text style={styles.itemTitle}>{item.title}</Text>
+      <Text style={styles.itemMeta}>Estado: {item.status}</Text>
+      <Text style={styles.itemMeta}>
+        Vehículo: {item.vehicleId ?? '-'} | Cliente: {item.customerId ?? '-'}
+      </Text>
+    </Pressable>
+  )
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.searchRow}>
+        <TextInput
+          style={styles.search}
+          placeholder="Buscar por título/descripción"
+          value={query}
+          onChangeText={setQuery}
+          returnKeyType="search"
+        />
+      </View>
+      <View style={styles.statusRow}>
+        {statusOptions.map(opt => (
+          <Pressable
+            key={opt.value}
+            style={[styles.statusBtn, status === opt.value && styles.statusBtnActive]}
+            onPress={() => setStatus(opt.value)}
+          >
+            <Text
+              style={[styles.statusBtnText, status === opt.value && styles.statusBtnTextActive]}
+            >
+              {opt.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* CTA para crear nueva orden */}
+      <Pressable
+        style={styles.newBtn}
+        onPress={() => navigation.navigate('WorkOrderForm')}
+      >
+        <Text style={styles.newBtnText}>Nueva orden</Text>
+      </Pressable>
+      {/* Loader inicial si aún no hay datos */}
+      {loading && orders.length === 0 ? <ActivityIndicator style={{ marginTop: 16 }} /> : null}
+
+            {/* Lista paginada con infinito y refresh */}
+      <FlatList
+        data={orders}
+        keyExtractor={item => String(item.id)}
+        renderItem={renderItem}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        ListEmptyComponent={
+          !loading && orders.length === 0 ? (
+            <Text style={styles.empty}>No hay órdenes</Text>
+          ) : null
+        }
+      />
+    </View>
+  )
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16 },
+  searchRow: { marginBottom: 8 },
+  search: {
+    borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, padding: 8, flex: 1,
+  },
+  statusRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
+  statusBtn: {
+    paddingVertical: 6, paddingHorizontal: 10, borderRadius: 20,
+    borderWidth: 1, borderColor: '#d1d5db', marginRight: 6, marginBottom: 6,
+  },
+  statusBtnActive: { backgroundColor: '#0369a1', borderColor: '#0369a1' },
+  statusBtnText: { fontSize: 12, color: '#374151' },
+  statusBtnTextActive: { color: '#fff' },
+  newBtn: {
+    backgroundColor: '#0ea5e9', paddingVertical: 10, borderRadius: 8,
+    alignItems: 'center', marginBottom: 8,
+  },
+  newBtnText: { color: '#fff', fontWeight: '700' },
+  item: {
+    backgroundColor: '#f9fafb', padding: 12, borderRadius: 8,
+    borderWidth: 1, borderColor: '#e5e7eb', marginBottom: 8,
+  },
+  itemTitle: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  itemMeta: { fontSize: 12, color: '#374151' },
+  empty: { textAlign: 'center', marginTop: 20, color: '#6b7280' },
+});
