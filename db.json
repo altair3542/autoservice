@@ -1,0 +1,58 @@
+{
+  "customers": [
+    { "id": 1, "name": "Juan Pérez", "phone": "3001234567", "email": "juan@example.com" },
+    { "id": 2, "name": "Ana Ruiz", "phone": "3112223344", "email": "ana@example.com" },
+    { "id": 3, "name": "Carlos González", "phone": "3159876543", "email": "carlos@example.com" }
+  ],
+  "vehicles": [
+    { "id": 1, "customerId": 1, "plate": "ABC123", "brand": "Toyota", "model": "Corolla", "year": 2018 },
+    { "id": 2, "customerId": 2, "plate": "DEF456", "brand": "Mazda", "model": "3", "year": 2021 },
+    { "id": 3, "customerId": 3, "plate": "GHI789", "brand": "Honda", "model": "Civic", "year": 2019 }
+  ],
+  "technicians": [
+    { "id": 1, "name": "Laura García", "phone": "3015550000" },
+    { "id": 2, "name": "Mario Díaz", "phone": "3029998877" },
+    { "id": 3, "name": "Juliana Martínez", "phone": "3045678912" }
+  ],
+  "workorders": [
+    {
+      "id": 1,
+      "vehicleId": 1,
+      "customerId": 1,
+      "technicianId": 1,
+      "status": "nueva",
+      "priority": "media",
+      "title": "Cambio de aceite",
+      "description": "Cliente reporta ruido al encender",
+      "promisedDate": "2025-09-30T17:00:00.000Z",
+      "createdAt": "2025-09-22T12:00:00.000Z",
+      "updatedAt": "2025-09-22T12:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "vehicleId": 2,
+      "customerId": 2,
+      "technicianId": 2,
+      "status": "en_proceso",
+      "priority": "alta",
+      "title": "Reemplazo de frenos",
+      "description": "Se reporta desgaste en los frenos delanteros",
+      "promisedDate": "2025-10-05T10:00:00.000Z",
+      "createdAt": "2025-09-25T14:30:00.000Z",
+      "updatedAt": "2025-09-25T14:30:00.000Z"
+    },
+    {
+      "id": 3,
+      "vehicleId": 3,
+      "customerId": 3,
+      "technicianId": 3,
+      "status": "finalizada",
+      "priority": "baja",
+      "title": "Alineación de dirección",
+      "description": "Dirección desalineada, revisar y corregir",
+      "promisedDate": "2025-09-28T12:00:00.000Z",
+      "createdAt": "2025-09-20T16:15:00.000Z",
+      "updatedAt": "2025-09-28T12:00:00.000Z"
+    }
+  ]
+}
