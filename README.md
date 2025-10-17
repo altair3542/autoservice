@@ -1,254 +1,249 @@
+
 # AutoService — README
 
-Gestor de **servicios técnicos automotrices** hecho con **Expo + React Native** (JavaScript).  
-MVP listo para correr en **Expo Go**, con **login clásico** (usuario/contraseña), **tabs** por dominio y **rutas protegidas**.
+> **Estado actual (noviembre 2025)**  
+> App Expo/React Native con login **DummyJSON** y backend mock **json‑server** para datos locales
+> (`customers`, `vehicles`, `technicians`, `workorders`). Se corrigieron errores en UI y API
+> para crear/editar/borrar **Clientes**, **Vehículos** y **Órdenes**.
 
 ---
 
-## ✨ Qué hace hoy (Sesión 1)
+## 1) Requisitos
 
-- **Login** contra API pública (DummyJSON) y **token** guardado en el dispositivo.
-- **Splash** que restaura sesión al abrir la app.
-- **Tabs**: Órdenes, Vehículos, Clientes, Técnicos y Perfil (stubs listos).
-- **Rutas protegidas** (si no hay token → Login).
-
-> Próximas sesiones: CRUD real de Órdenes/Clientes/Vehículos/Técnicos, filtros/búsqueda y pulido de UX.
-
----
-
-## 🧱 Stack
-
-- **Expo** (React Native, JS)
-- **React Navigation** (Stack + Bottom Tabs)
-- **expo-secure-store** para almacenar el token
-- **fetch** nativo para llamadas HTTP
-- Estilos con **StyleSheet** (sin Tailwind)
+- Node.js 18+ (recomendado 20+)
+- npm o pnpm
+- **Expo** (CLI): `npx expo --version`
+- **Android Emulator** o **dispositivo físico** con Expo Go
+- **json-server** (vía `npx`, no necesita instalación global)
 
 ---
 
-## 🗂️ Estructura de carpetas
-
-```
-autoservice/
-├─ App.js
-├─ app.json
-├─ index.js               # (si existe, importa ./App)
-└─ src/
-   ├─ api.js              # auth (login/me) con DummyJSON
-   ├─ auth/
-   │  ├─ AuthContext.js   # contexto de sesión (token, user, signIn, signOut)
-   │  ├─ LoginScreen.js
-   │  └─ SplashScreen.js
-   └─ screens/
-      ├─ WorkOrdersScreen.js
-      ├─ VehiclesScreen.js
-      ├─ CustomersScreen.js
-      ├─ TechniciansScreen.js
-      └─ ProfileScreen.js
-```
-
-> Todo está en **.js** para máxima compatibilidad con Metro (Windows/Android).
-
----
-
-## ✅ Requisitos
-
-- Node LTS + npm
-- Expo CLI (`npx expo ...`)
-- Emulador Android (o dispositivo físico con **Expo Go**)
-
----
-
-## ⚙️ Instalación
-
-Dentro del proyecto:
+## 2) Instalación
 
 ```bash
-# Navegación
-npm i @react-navigation/native @react-navigation/native-stack @react-navigation/bottom-tabs
-npx expo install react-native-screens react-native-safe-area-context
+# 1) Instalar dependencias
+npm install
 
-# Token seguro (funciona en Expo Go)
-npx expo install expo-secure-store
-```
-
----
-
-## ▶️ Ejecutar
-
-```bash
+# 2) (Opcional) limpiar caché si cambiaste archivos
 npx expo start -c
 ```
 
-- Abre en **Expo Go** (Android emulador o físico).
-- **Credenciales de prueba** (DummyJSON):
-  - Usuario: `emilys`
-  - Contraseña: `emilyspass`
-
-Si el login es correcto, entrarás a las **Tabs** y el token quedará guardado. Al reabrir la app, el **Splash** restaurará la sesión.
-
 ---
 
-## 🔐 Autenticación (cómo funciona)
+## 3) Configuración del backend (mock)
 
-- `POST https://dummyjson.com/auth/login` → devuelve `accessToken` y datos del usuario.
-- Guardamos `accessToken` en **SecureStore**.
-- `GET https://dummyjson.com/auth/me` con `Authorization: Bearer <token>` para restaurar sesión.
-- Botón “Cerrar sesión” borra el token y vuelve a Login.
-
-> Por simplicidad, hoy solo usamos DummyJSON para **auth**.  
-> En el CRUD real usaremos un **mock local** (json-server) para **WorkOrders/Customers/Vehicles/Technicians**.
-
----
-
-## 🧪 API mock (para el CRUD en siguientes sesiones)
-
-Usaremos **json-server** en tu PC:
-
-```bash
-npm i -D json-server
-```
-
-Crea `db.json` en la raíz del proyecto:
+El proyecto usa **json-server** como mock para `customers`, `vehicles`, `technicians`, `workorders`.
+Crea (o revisa) el archivo `db.json` en la **raíz** del repo con el siguiente contenido mínimo:
 
 ```json
 {
-  "customers": [
-    { "id": 1, "name": "Juan Pérez", "phone": "3001234567", "email": "juan@example.com" }
-  ],
-  "vehicles": [
-    { "id": 1, "customerId": 1, "plate": "ABC123", "brand": "Toyota", "model": "Corolla", "year": 2018 }
-  ],
-  "technicians": [
-    { "id": 1, "name": "Laura García", "phone": "3015550000" }
-  ],
-  "workorders": [
-    {
-      "id": 1,
-      "vehicleId": 1,
-      "customerId": 1,
-      "technicianId": 1,
-      "status": "nueva",
-      "priority": "media",
-      "title": "Cambio de aceite",
-      "description": "Cliente reporta ruido al encender",
-      "promisedDate": "2025-09-30T17:00:00.000Z",
-      "createdAt": "2025-09-22T12:00:00.000Z",
-      "updatedAt": "2025-09-22T12:00:00.000Z"
-    }
-  ]
+  "users": [],
+  "customers": [],
+  "vehicles": [],
+  "technicians": [],
+  "workorders": []
 }
 ```
 
-Lanza el mock:
-
+### Levantar el mock
 ```bash
 npx json-server --watch db.json --port 3001
 ```
 
-### URL para el dispositivo/emulador
+- **Android Emulator**: la app accede al mock con `http://10.0.2.2:3001`
+- **iOS simulator / desktop**: `http://localhost:3001`
+- **Dispositivo físico (LAN)**: usa `http://<IP-de-tu-PC>:3001`
 
-- **Android emulador (AVD)**: `http://10.0.2.2:3001`
-- **Dispositivo físico o emulador con LAN**: `http://<TU_IP_LAN>:3001`  
-  (Tu IP la ves con `ipconfig` en Windows).
+> La URL base se define en tiempo de ejecución con la variable
+> `EXPO_PUBLIC_API_URL`. Si **no** la defines, en Android se usa
+> `http://10.0.2.2:3001` por defecto.
 
-> **Importante:** RN no usa CORS, pero si usas **HTTPS auto-firmado** fallará. Para el mock, usa **HTTP** plano.
+---
 
-En la próxima sesión, agregaremos funciones en `src/api.js` (o `src/api/workorders.js`, etc.) apuntando a esa base, p. ej.:
+## 4) Variables de entorno
 
-```js
-const API_BASE = 'http://10.0.2.2:3001'; // o tu IP LAN
+Para **dispositivo físico** o si tu mock no corre en el host por defecto, define:
 
-export async function listWorkOrders({ q, status, limit = 20, page = 1 }) {
-  const params = new URLSearchParams();
-  if (q) params.set('q', q);
-  if (status) params.set('status', status);
-  params.set('_page', page);
-  params.set('_limit', limit);
+### macOS / Linux
+```bash
+EXPO_PUBLIC_API_URL="http://192.168.1.50:3001" npx expo start -c
+```
 
-  const res = await fetch(`${API_BASE}/workorders?${params.toString()}`);
-  if (!res.ok) throw new Error('No se pudo cargar órdenes');
-  return res.json();
-}
+### Windows PowerShell
+```powershell
+$env:EXPO_PUBLIC_API_URL = "http://192.168.1.50:3001"; npx expo start -c
+```
+
+> Cambia `192.168.1.50` por la IP **real** de tu PC en la red local.
+
+---
+
+## 5) Autenticación (DummyJSON)
+
+El login **no** usa el mock local. Está **restaurado exactamente** como el proyecto original:
+`POST https://dummyjson.com/auth/login` con **username** y **password**.
+
+- Archivo: `src/api.js`
+- Firma: `login({ username, password })` _o_ `login(username, password)`
+- Respuesta: JSON de DummyJSON (`accessToken`, `id`, `username`, `email`, ...)
+
+> Usa credenciales válidas de DummyJSON (ver documentación oficial).
+
+---
+
+## 6) Estructura relevante
+
+```
+src/
+  api.js                  # Login DummyJSON + helper request + CRUD customers/vehicles/technicians
+  api/
+    workorders.js         # CRUD de órdenes (export *named* y *default*)
+  components/
+    SelectModal.jsx       # Selector reutilizable (FlatList / View corregidos)
+  screens/
+    CustomersScreen.jsx   # Crear/editar/borrar clientes
+    VehiclesScreen.jsx    # Crear/editar/borrar vehículos
+    WorkOrdersScreen.jsx  # Crear/editar/borrar órdenes
 ```
 
 ---
 
-## 🧭 Flujos principales
+## 7) Arranque rápido
 
-- **Login → Tabs** (si hay token, salta Login).
-- **Órdenes** (tab por defecto): lista, creación, cambio de estado (próximo).
-- **Vehículos/Clientes/Técnicos**: CRUDs simples (próximo).
-- **Perfil**: ver usuario (del `me`) y cerrar sesión.
+1. **Mock** (json-server):
+   ```bash
+   npx json-server --watch db.json --port 3001
+   ```
+2. **App** (Expo):
+   ```bash
+   npx expo start -c
+   ```
+3. Inicia la app en **Android**/**iOS** o escanea con **Expo Go**.
 
----
-
-## 🧩 Modelo de datos (MVP)
-
-```txt
-Customer:   { id, name, phone, email? }
-Vehicle:    { id, customerId, plate, brand, model, year, vin? }
-Technician: { id, name, phone? }
-WorkOrder:  {
-  id, vehicleId, customerId, technicianId?,
-  status: 'nueva'|'diagnostico'|'en_proceso'|'en_espera'|'finalizada'|'entregada',
-  priority: 'baja'|'media'|'alta',
-  title, description, promisedDate?, createdAt, updatedAt
-}
-```
+> Verifica el mock desde el emulador Android: abre su navegador y visita
+> `http://10.0.2.2:3001/customers`. Debe responder JSON.
 
 ---
 
-## 🧹 Convenciones
+## 8) Convenciones de datos
 
-- **Components** y **pantallas** pequeñas y legibles.
-- Estilos en **StyleSheet** (nada de Tailwind).
-- **Estados** de UI claros: cargando / vacío / error.
-- **Sin** logs de datos sensibles; el token va en SecureStore.
+- `vehicles.plate` se guarda **en mayúsculas**.
+- `vehicles.year` es numérico (`null` si vacío).
+- `workorders.status`: `pending | in_progress | done | cancelled`
+- `workorders.priority`: `low | medium | high`
+- Todas las colecciones usan `createdAt` / `updatedAt` (ISO).
 
 ---
 
-## 🧯 Troubleshooting
+## 9) API de la app (resumen)
 
-- **“Unable to resolve … from …”**  
-  Revisa que el archivo y **ruta** existan tal cual; borra caché:
+### `src/api.js`
+- **Auth (DummyJSON)**
+  - `login({ username, password })` → DummyJSON `/auth/login`
+  - `logout()` → noop
+  - `me(id)` → DummyJSON `/users/:id` (opcional)
+- **Helper local**
+  - `request(path, opts)` → hace fetch al `API_BASE` (mock)
+- **Customers**: `listCustomers`, `getCustomer`, `createCustomer`, `updateCustomer`, `deleteCustomer`
+- **Vehicles**: `listVehicles`, `getVehicle`, `createVehicle`, `updateVehicle`, `deleteVehicle`
+- **Technicians**: `listTechnicians`, `getTechnician`, `createTechnician`, `updateTechnician`, `deleteTechnician`
+
+### `src/api/workorders.js`
+- Named: `listWorkOrders`, `getWorkOrder`, `createWorkOrder`, `updateWorkOrder`, `deleteWorkOrder`
+- **Default export** con todas las anteriores (para compatibilidad):
+  ```js
+  import apiWorkorders from '../api/workorders';
+  await apiWorkorders.createWorkOrder(payload);
+  ```
+
+---
+
+## 10) Cambios recientes (changelog)
+
+- **SelectModal.jsx**
+  - Corregido `FlatList` (no `Flatlist`) y `<View>` (no `<view>`).
+  - Key extractor robusto y estilos/compat iOS/Android.
+
+- **API (workorders.js)**
+  - URLs correctas (`/workorders/:id`), filtro `q`, `default export` agregado.
+  - Helper `request` local para evitar **require cycles**.
+
+- **API (api.js)**
+  - Restaurado **login DummyJSON** tal cual el proyecto original.
+  - CRUD de `customers`, `vehicles`, `technicians` con normalizaciones (placa mayúsculas, año numérico).
+  - Export **default** `api` para compat (`api.login(...)`).
+
+- **Screens**
+  - `VehiclesScreen.jsx`: validación de placa/año, creación/edición/refresh estable.
+  - `WorkOrdersScreen.jsx`: select de cliente/vehículo/estado/prioridad y CRUD.
+  - `CustomersScreen.jsx`: crear/editar/borrar con búsqueda reactiva.
+
+---
+
+## 11) Problemas comunes & soluciones
+
+### “Network request failed” al crear
+- Asegúrate de que **json-server** está arriba.
+- Revisa `EXPO_PUBLIC_API_URL` según el entorno (Android/iOS/LAN).
+- Prueba la URL desde el emulador: `http://10.0.2.2:3001/customers`.
+
+### `_api.login is not a function`
+- Usa el **default export** de `src/api.js`:
+  ```js
+  import api from '../api';
+  await api.login({ username, password });
+  ```
+
+### `_apiWorkordersJs.createWorkOrder is not a function`
+- Importa **default** o **named** desde `../api/workorders`:
+  ```js
+  // Opción A (default)
+  import apiWorkorders from '../api/workorders';
+  await apiWorkorders.createWorkOrder(payload);
+
+  // Opción B (named)
+  import { createWorkOrder } from '../api/workorders';
+  await createWorkOrder(payload);
+  ```
+
+### Warning: “Require cycle: src/api/workorders.js -> …”
+- `workorders.js` no debe importar desde `../api`. Ya se usa un helper **local**.
+- Limpia caché de Metro:
   ```bash
+  # mac/linux
+  rm -rf node_modules/.cache
+  npx expo start -c
+
+  # windows
+  Remove-Item -Recurse -Force node_modules\.cache
   npx expo start -c
   ```
 
-- **Se queda cargando**  
-  Suele ser un fetch que falló. Abre consola de Metro (Ctrl/Cmd + m/d en emu) y revisa el error.  
-  Verifica internet del emulador y que los endpoints respondan.
-
-- **El mock no responde desde el emulador**  
-  Usa `http://10.0.2.2:3001` (AVD) o tu **IP LAN** si usas dispositivo físico.  
-  Asegúrate de que el firewall permita el puerto 3001.
-
-- **No persiste la sesión**  
-  Asegúrate de no limpiar SecureStore entre arranques y de que `GET /auth/me` devuelve 200.
+### Emulador Android no ve mi IP LAN
+- Usa `10.0.2.2` (alias de `localhost` del **host** desde el emulador).
+- En dispositivo físico: apunta a `http://<IP-de-tu-PC>:3001` (misma red).
 
 ---
 
-## 🗺️ Roadmap (próximas sesiones)
+## 12) Flujo de prueba sugerido
 
-1. **CRUD Órdenes**: lista paginada, crear/editar/eliminar, filtros por estado y búsqueda por placa/cliente.  
-2. **CRUD Clientes/Vehículos/Técnicos**: selección en formularios de órdenes.  
-3. Pulido UX: estados vacíos bonitos, confirmaciones, contadores por estado.
-
----
-
-## 🧑‍💻 Scripts útiles
-
-```bash
-# App
-npx expo start -c
-
-# Mock JSON-server
-npx json-server --watch db.json --port 3001
-```
+1. **Login DummyJSON** con `username/password` válidos.
+2. **Clientes**: crear uno nuevo.
+3. **Vehículos**: crear vehículo y asociarlo al cliente (placa MAYÚSCULAS).
+4. **Órdenes**: crear orden usando el cliente/vehículo previos.
+5. Editar y borrar para validar el ciclo completo.
+6. Hacer _pull to refresh_ y búsquedas con el cuadro “Buscar…”.
 
 ---
 
-## 📄 Licencia
+## 13) Roadmap corta
 
-Uso educativo. Puedes adaptar el código libremente para tus proyectos.
+- Validaciones adicionales (email único, placa única).
+- Manejo de token DummyJSON en headers (si se decide usarlo).
+- Paginación con indicadores de fin de lista.
+- Persistencia local (MMKV/AsyncStorage) para sesión.
+
+---
+
+## 14) Licencia
+Proyecto con fines educativos/demostrativos.
