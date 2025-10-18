@@ -13,7 +13,7 @@ import {
   ActivityIndicator
 } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
-import { listWorkOrders } from '../api/workorders'
+import { listWorkOrders, getWorkOrder } from '../api/workorders'
 
 // Chips de filtro por estado (vacío = sin filtro).
 const statusOptions = [

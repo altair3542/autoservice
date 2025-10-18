@@ -50,10 +50,11 @@ export async function listWorkOrders({
 }
 
 /** Obtiene una orden por id */
-export async function getWorkOrder(id) {
-  if (id == null) throw new Error('Falta id');
-  return request(`/workorders/${id}`);
-}
+// export async function getWorkOrder(id) {
+//   if (id == null) throw new Error('Falta id');
+//   return request(`/workorders/${id}`);
+// }
+
 
 /** Crea una orden */
 export async function createWorkOrder(payload) {

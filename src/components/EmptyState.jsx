@@ -13,3 +13,4 @@ const s=StyleSheet.create({
   h:{fontSize:18,fontWeight:'800'},
   p:{marginTop:6,color:'#6b7280',textAlign:'center'}
 });
+

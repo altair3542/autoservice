@@ -175,6 +175,13 @@ export async function updateTechnician(id, payload) {
 }
 export async function deleteTechnician(id) { if (id == null) throw new Error('Falta id de técnico'); await request(`/technicians/${id}`, { method: 'DELETE' }); return true; }
 
+export async function getWorkOrder(id){
+  const r = await fetch(`${BASE_URL}/workorders/{id}`)
+  if (!r.ok) throw new Error('No se pudo cargar la orden')
+  return r.json
+}
+
+
 // -------------------- DEFAULT EXPORT (compat api.login(...)) --------------------
 const api = {
   // auth (DummyJSON)
@@ -186,6 +193,6 @@ const api = {
   // vehicles
   listVehicles, getVehicle, createVehicle, updateVehicle, deleteVehicle,
   // technicians
-  listTechnicians, getTechnician, createTechnician, updateTechnician, deleteTechnician,
+  listTechnicians, getTechnician, createTechnician, updateTechnician, deleteTechnician, getWorkOrder
 };
 export default api;
