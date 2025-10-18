@@ -1,8 +1,6 @@
 // src/api.js
 
 // -------------------- AUTH (DummyJSON) --------------------
-// Mantén este login tal cual: recibe { username, password } o (username, password)
-// y hace POST a https://dummyjson.com/auth/login
 const DUMMY_BASE = 'https://dummyjson.com';
 
 /**
@@ -42,7 +40,7 @@ export async function me(id) {
 // -------------------- Helper JSON local (json-server) --------------------
 export const API_BASE = (process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3001').replace(/\/$/, '');
 
-export async function request(path, { method = 'GET', headers = {}, body } = {}) {
+async function request(path, { method = 'GET', headers = {}, body } = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: { 'Content-Type': 'application/json', ...headers },
@@ -71,7 +69,12 @@ export async function listCustomers({ q, page = 1, limit = 50, sortBy, order = '
   if (sortBy) { params.set('_sort', String(sortBy)); params.set('_order', order === 'desc' ? 'desc' : 'asc'); }
   return request(`/customers?${params.toString()}`);
 }
-export async function getCustomer(id) { if (id == null) throw new Error('Falta id de cliente'); return request(`/customers/${id}`); }
+
+export async function getCustomer(id) {
+  if (id == null) throw new Error('Falta id de cliente');
+  return request(`/customers/${id}`);
+}
+
 export async function createCustomer(payload) {
   const body = {
     name: (payload.name || '').trim(),
@@ -85,6 +88,7 @@ export async function createCustomer(payload) {
   };
   return request('/customers', { method: 'POST', body });
 }
+
 export async function updateCustomer(id, payload) {
   if (id == null) throw new Error('Falta id de cliente');
   const body = {
@@ -98,7 +102,12 @@ export async function updateCustomer(id, payload) {
   };
   return request(`/customers/${id}`, { method: 'PATCH', body });
 }
-export async function deleteCustomer(id) { if (id == null) throw new Error('Falta id de cliente'); await request(`/customers/${id}`, { method: 'DELETE' }); return true; }
+
+export async function deleteCustomer(id) {
+  if (id == null) throw new Error('Falta id de cliente');
+  await request(`/customers/${id}`, { method: 'DELETE' });
+  return true;
+}
 
 // -------------------- VEHÍCULOS --------------------
 export async function listVehicles({ q, page = 1, limit = 50, sortBy, order = 'asc', customerId, plate } = {}) {
@@ -111,7 +120,12 @@ export async function listVehicles({ q, page = 1, limit = 50, sortBy, order = 'a
   if (sortBy) { params.set('_sort', String(sortBy)); params.set('_order', order === 'desc' ? 'desc' : 'asc'); }
   return request(`/vehicles?${params.toString()}`);
 }
-export async function getVehicle(id) { if (id == null) throw new Error('Falta id de vehículo'); return request(`/vehicles/${id}`); }
+
+export async function getVehicle(id) {
+  if (id == null) throw new Error('Falta id de vehículo');
+  return request(`/vehicles/${id}`);
+}
+
 export async function createVehicle(payload) {
   const body = {
     customerId: payload.customerId ?? null,
@@ -125,6 +139,7 @@ export async function createVehicle(payload) {
   };
   return request('/vehicles', { method: 'POST', body });
 }
+
 export async function updateVehicle(id, payload) {
   if (id == null) throw new Error('Falta id de vehículo');
   const body = {
@@ -137,7 +152,12 @@ export async function updateVehicle(id, payload) {
   };
   return request(`/vehicles/${id}`, { method: 'PATCH', body });
 }
-export async function deleteVehicle(id) { if (id == null) throw new Error('Falta id de vehículo'); await request(`/vehicles/${id}`, { method: 'DELETE' }); return true; }
+
+export async function deleteVehicle(id) {
+  if (id == null) throw new Error('Falta id de vehículo');
+  await request(`/vehicles/${id}`, { method: 'DELETE' });
+  return true;
+}
 
 // -------------------- TÉCNICOS --------------------
 export async function listTechnicians({ q, page = 1, limit = 50, sortBy, order = 'asc' } = {}) {
@@ -148,7 +168,12 @@ export async function listTechnicians({ q, page = 1, limit = 50, sortBy, order =
   if (sortBy) { params.set('_sort', String(sortBy)); params.set('_order', order === 'desc' ? 'desc' : 'asc'); }
   return request(`/technicians?${params.toString()}`);
 }
-export async function getTechnician(id) { if (id == null) throw new Error('Falta id de técnico'); return request(`/technicians/${id}`); }
+
+export async function getTechnician(id) {
+  if (id == null) throw new Error('Falta id de técnico');
+  return request(`/technicians/${id}`);
+}
+
 export async function createTechnician(payload) {
   const body = {
     name: (payload.name || '').trim(),
@@ -162,6 +187,7 @@ export async function createTechnician(payload) {
   };
   return request('/technicians', { method: 'POST', body });
 }
+
 export async function updateTechnician(id, payload) {
   if (id == null) throw new Error('Falta id de técnico');
   const body = {
@@ -173,14 +199,12 @@ export async function updateTechnician(id, payload) {
   };
   return request(`/technicians/${id}`, { method: 'PATCH', body });
 }
-export async function deleteTechnician(id) { if (id == null) throw new Error('Falta id de técnico'); await request(`/technicians/${id}`, { method: 'DELETE' }); return true; }
 
-export async function getWorkOrder(id){
-  const r = await fetch(`${BASE_URL}/workorders/{id}`)
-  if (!r.ok) throw new Error('No se pudo cargar la orden')
-  return r.json
+export async function deleteTechnician(id) {
+  if (id == null) throw new Error('Falta id de técnico');
+  await request(`/technicians/${id}`, { method: 'DELETE' });
+  return true;
 }
-
 
 // -------------------- DEFAULT EXPORT (compat api.login(...)) --------------------
 const api = {
@@ -193,6 +217,17 @@ const api = {
   // vehicles
   listVehicles, getVehicle, createVehicle, updateVehicle, deleteVehicle,
   // technicians
-  listTechnicians, getTechnician, createTechnician, updateTechnician, deleteTechnician, getWorkOrder
+  listTechnicians, getTechnician, createTechnician, updateTechnician, deleteTechnician
+
+
 };
+
 export default api;
+export {
+  API_BASE as WORKORDERS_API_BASE,
+  listWorkOrders,
+  getWorkOrder,
+  createWorkOrder,
+  updateWorkOrder,
+  deleteWorkOrder,
+} from './api/workorders';

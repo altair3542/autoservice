@@ -4,6 +4,8 @@ import { getWorkOrder, updateWorkOrder, deleteWorkOrder } from '../api';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 
+console.log(getWorkOrder); 
+
 const NEXT = {
   nueva:'diagnostico',
   diagnostico: 'en_proceso',

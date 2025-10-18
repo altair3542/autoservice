@@ -1,177 +1,259 @@
-// Lista paginada de órdenes con búsqueda y filtro por estado.
-// Usa FlatList (infinite scroll) + pull-to-refresh.
-// Al tocar un ítem, navega al formulario en modo edición.
-
-import { useState, useEffect } from 'react'
+// src/screens/WorkOrdersListScreen.jsx
+import { useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  ActivityIndicator
-} from 'react-native'
-import { useNavigation } from '@react-navigation/native'
-import { listWorkOrders, getWorkOrder } from '../api/workorders'
+  View, Text, TextInput, FlatList, Pressable,
+  StyleSheet, Alert
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import {
+  listWorkOrders, updateWorkOrder, deleteWorkOrder, createWorkOrder
+} from '../api.js';
+import Loader from '../components/Loader.jsx';
+import EmptyState from '../components/EmptyState.jsx';
+import ErrorState from '../components/ErrorState.jsx';
 
-// Chips de filtro por estado (vacío = sin filtro).
-const statusOptions = [
-  { label: 'Todas', value: '' },
-  { label: 'Nueva', value: 'nueva' },
-  { label: 'Diagnóstico', value: 'diagnostico' },
-  { label: 'En proceso', value: 'en_proceso' },
-  { label: 'En espera', value: 'en_espera' },
-  { label: 'Finalizada', value: 'finalizada' },
-  { label: 'Entregada', value: 'entregada' },
+const STATUS_OPTIONS = [
+  { key: '', label: 'Todos' },
+  { key: 'nueva', label: 'Nuevas' },
+  { key: 'diagnostico', label: 'Diagnóstico' },
+  { key: 'en_proceso', label: 'En proceso' },
+  { key: 'finalizada', label: 'Finalizadas' },
+  { key: 'entregada', label: 'Entregadas' },
 ];
+
+const NEXT = { nueva:'diagnostico', diagnostico:'en_proceso', en_proceso:'finalizada', finalizada:'entregada', entregada:'entregada' };
 
 export default function WorkOrdersListScreen() {
   const navigation = useNavigation();
 
-  // Estados locales de la lista y UI
-  const [orders, setOrders] = useState([])
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
-  const [loading, setLoading] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
-  const [query, setQuery] = useState('')
-  const [status, setStatus] = useState('')
+  const [orders, setOrders] = useState([]);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('');
+  const [page, setPage] = useState(1);
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Carga una página (append = true concatena, false reemplaza).
-  const loadOrders = async (pageToLoad = 1, append = false) => {
-    if (loading) return
-    setLoading(true)
+  async function fetchOrders({ resetPage = false } = {}) {
+    setLoading(true);
+    setError('');
     try {
       const data = await listWorkOrders({
-        question: query.trim() || undefined,
-        status: status || undefined,
-        page: pageToLoad,
-        limit: 20,
-      })
-      setOrders(prev => (append ? [...prev, ...data] : data))
-      setHasMore(data.length >=20)
-      setPage(pageToLoad)
+        q: search,
+        status,
+        _page: resetPage ? 1 : page,
+        _limit: 20,
+      });
+      setOrders(data);
+      if (resetPage) setPage(1);
     } catch (e) {
-      console.warn(e)
+      setError(e?.message || 'Error al cargar órdenes');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
-  // Efecto: recargar al cambiar búsqueda/filtro.
   useEffect(() => {
-    loadOrders(1, false)
-  }, [query, status]);
+    fetchOrders({ resetPage: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, status]);
 
-  // infinite scroll (cargar siguiente pagina)
-  const loadMore = () => {
-    if (!hasMore || loading) return;
-    loadOrders(page + 1, true)
-  }
+  // Resumen por estado
+  const resumen = useMemo(() => {
+    return orders.reduce((acc, o) => {
+      acc[o.status] = (acc[o.status] || 0) + 1;
+      return acc;
+    }, {});
+  }, [orders]);
 
-  // Pull to refresh (recarga pagina 1)
-  const onRefresh = async () => {
-    setRefreshing(true)
-    await loadOrders(1, false)
-    setRefreshing(false)
-  }
+  // Acciones
+  const handleAdvance = async (item) => {
+    const next = NEXT[item.status] || item.status;
+    if (next === item.status) return;
+    try {
+      await updateWorkOrder(item.id, { status: next, updatedAt: new Date().toISOString() });
+      fetchOrders();
+    } catch (e) {
+      Alert.alert('Error', e?.message || 'No se pudo actualizar la orden');
+    }
+  };
 
-  // Render de cada ítem (tocar = editar)
+  const handleDelete = async (id) => {
+    Alert.alert('Confirmar', '¿Eliminar esta orden?', [
+      { text: 'Cancelar' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteWorkOrder(id);
+            fetchOrders();
+          } catch (e) {
+            Alert.alert('Error', e?.message || 'No se pudo eliminar la orden');
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleCreateQuick = async () => {
+    // Crea una orden mínima de prueba (puedes quitar esto si usarás solo el formulario)
+    const now = new Date().toISOString();
+    const payload = {
+      vehicleId: 1,
+      customerId: 1,
+      technicianId: 1,
+      status: 'nueva',
+      priority: 'media',
+      title: `Orden rápida ${Date.now()}`,
+      description: 'Creada desde el botón rápido',
+      promisedDate: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+    try {
+      await createWorkOrder(payload);
+      fetchOrders();
+    } catch (e) {
+      Alert.alert('Error', e?.message || 'No se pudo crear la orden');
+    }
+  };
+
+  // Render de cada fila
   const renderItem = ({ item }) => (
     <Pressable
-      style={styles.item}
-      onPress={() => navigation.navigate('WorkOrderForm', { id: item.id })}
+      onPress={() => navigation.navigate('WorkOrderDetail', { id: item.id })}
+      style={s.rowItem}
     >
-      <Text style={styles.itemTitle}>{item.title}</Text>
-      <Text style={styles.itemMeta}>Estado: {item.status}</Text>
-      <Text style={styles.itemMeta}>
-        Vehículo: {item.vehicleId ?? '-'} | Cliente: {item.customerId ?? '-'}
-      </Text>
-    </Pressable>
-  )
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.searchRow}>
-        <TextInput
-          style={styles.search}
-          placeholder="Buscar por título/descripción"
-          value={query}
-          onChangeText={setQuery}
-          returnKeyType="search"
-        />
+      <View style={{ flex: 1 }}>
+        <Text style={s.title}>{item.title}</Text>
+        <Text style={s.meta}>Estado: {item.status} · Prioridad: {item.priority}</Text>
       </View>
-      <View style={styles.statusRow}>
-        {statusOptions.map(opt => (
+      <View style={s.rowBtns}>
+        <Pressable style={[s.chip, { backgroundColor: '#fde68a' }]} onPress={() => handleAdvance(item)}>
+          <Text>Avanzar</Text>
+        </Pressable>
+        <Pressable style={[s.chip, { backgroundColor: '#fecaca' }]} onPress={() => handleDelete(item.id)}>
+          <Text>Eliminar</Text>
+        </Pressable>
+      </View>
+    </Pressable>
+  );
+
+  // UI principal
+  return (
+    <View style={s.box}>
+      <Text style={s.h1}>Órdenes de Servicio</Text>
+
+      {/* Búsqueda */}
+      <TextInput
+        style={s.input}
+        placeholder="Buscar por placa, cliente o título"
+        value={search}
+        onChangeText={setSearch}
+      />
+
+      {/* Filtro por estado */}
+      <View style={s.filters}>
+        {STATUS_OPTIONS.map(opt => (
           <Pressable
-            key={opt.value}
-            style={[styles.statusBtn, status === opt.value && styles.statusBtnActive]}
-            onPress={() => setStatus(opt.value)}
+            key={opt.key || 'all'}
+            style={[
+              s.filterChip,
+              status === opt.key && { backgroundColor: '#0ea5e9' }
+            ]}
+            onPress={() => setStatus(opt.key)}
           >
-            <Text
-              style={[styles.statusBtnText, status === opt.value && styles.statusBtnTextActive]}
-            >
-              {opt.label}
-            </Text>
+            <Text style={[s.filterText, status === opt.key && { color: '#fff' }]}>{opt.label}</Text>
           </Pressable>
         ))}
       </View>
 
-      {/* CTA para crear nueva orden */}
-      <Pressable
-        style={styles.newBtn}
-        onPress={() => navigation.navigate('WorkOrderForm')}
-      >
-        <Text style={styles.newBtnText}>Nueva orden</Text>
-      </Pressable>
-      {/* Loader inicial si aún no hay datos */}
-      {loading && orders.length === 0 ? <ActivityIndicator style={{ marginTop: 16 }} /> : null}
+      {/* Resumen */}
+      <View style={s.summary}>
+        <Chip label={`Nuevas: ${resumen.nueva || 0}`} />
+        <Chip label={`Diag.: ${resumen.diagnostico || 0}`} />
+        <Chip label={`En proc.: ${resumen.en_proceso || 0}`} />
+        <Chip label={`Finalizadas: ${resumen.finalizada || 0}`} />
+        <Chip label={`Entregadas: ${resumen.entregada || 0}`} />
+      </View>
 
-            {/* Lista paginada con infinito y refresh */}
-      <FlatList
-        data={orders}
-        keyExtractor={item => String(item.id)}
-        renderItem={renderItem}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        ListEmptyComponent={
-          !loading && orders.length === 0 ? (
-            <Text style={styles.empty}>No hay órdenes</Text>
-          ) : null
-        }
-      />
+      {/* Lista / estados de UI */}
+      {loading ? (
+        <Loader />
+      ) : error ? (
+        <ErrorState message={error} onRetry={() => fetchOrders()} />
+      ) : orders.length === 0 ? (
+        <EmptyState title="Sin órdenes" subtitle="Crea la primera desde el botón de abajo." />
+      ) : (
+        <FlatList
+          data={orders}
+          keyExtractor={(it) => String(it.id)}
+          renderItem={renderItem}
+          onRefresh={() => fetchOrders()}
+          refreshing={loading}
+          contentContainerStyle={{ paddingBottom: 80 }}
+        />
+      )}
+
+      {/* Botonera inferior */}
+      <View style={s.footer}>
+        <Pressable style={[s.btn, { backgroundColor: '#0ea5e9' }]} onPress={() => navigation.navigate('WorkOrderForm')}>
+          <Text style={s.btnT}>Nueva Orden</Text>
+        </Pressable>
+        <Pressable style={[s.btn, { backgroundColor: '#10b981' }]} onPress={handleCreateQuick}>
+          <Text style={s.btnT}>Crear Rápida</Text>
+        </Pressable>
+      </View>
     </View>
-  )
+  );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  searchRow: { marginBottom: 8 },
-  search: {
-    borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, padding: 8, flex: 1,
+// Chip simple reutilizable
+function Chip({ label }) {
+  return (
+    <View style={s.chipSummary}>
+      <Text>{label}</Text>
+    </View>
+  );
+}
+
+const s = StyleSheet.create({
+  box: { flex: 1, padding: 16 },
+  h1: { fontSize: 22, fontWeight: '800', marginBottom: 8 },
+
+  input: {
+    borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10,
+    padding: 10, marginBottom: 8
   },
-  statusRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
-  statusBtn: {
-    paddingVertical: 6, paddingHorizontal: 10, borderRadius: 20,
-    borderWidth: 1, borderColor: '#d1d5db', marginRight: 6, marginBottom: 6,
+
+  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  filterChip: {
+    backgroundColor: '#e5e7eb',
+    paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10
   },
-  statusBtnActive: { backgroundColor: '#0369a1', borderColor: '#0369a1' },
-  statusBtnText: { fontSize: 12, color: '#374151' },
-  statusBtnTextActive: { color: '#fff' },
-  newBtn: {
-    backgroundColor: '#0ea5e9', paddingVertical: 10, borderRadius: 8,
-    alignItems: 'center', marginBottom: 8,
+  filterText: { color: '#111827', fontWeight: '600' },
+
+  summary: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  chipSummary: {
+    backgroundColor: '#e5e7eb',
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10
   },
-  newBtnText: { color: '#fff', fontWeight: '700' },
-  item: {
-    backgroundColor: '#f9fafb', padding: 12, borderRadius: 8,
-    borderWidth: 1, borderColor: '#e5e7eb', marginBottom: 8,
+
+  rowItem: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#e5e7eb', gap: 8
   },
-  itemTitle: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  itemMeta: { fontSize: 12, color: '#374151' },
-  empty: { textAlign: 'center', marginTop: 20, color: '#6b7280' },
+  title: { fontSize: 16, fontWeight: '700' },
+  meta: { color: '#6b7280', marginTop: 4 },
+
+  rowBtns: { flexDirection: 'row', gap: 8 },
+  chip: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
+
+  footer: {
+    position: 'absolute', bottom: 16, left: 16, right: 16,
+    flexDirection: 'row', gap: 10
+  },
+  btn: { flex: 1, padding: 12, borderRadius: 10, alignItems: 'center' },
+  btnT: { color: '#fff', fontWeight: '700' },
 });
